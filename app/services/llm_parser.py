@@ -1,6 +1,7 @@
 from groq import Groq
 from app.config import get_settings
 import json
+from app.services.cache_service import get_diff, set_diff
 
 settings = get_settings()
 client = Groq(api_key=settings.groq_api_key)
@@ -8,6 +9,11 @@ client = Groq(api_key=settings.groq_api_key)
 
 
 def review_code(file_data: dict) -> dict:
+  #check cache first
+  cached = get_diff(str(file_data))
+  if cached:
+    return cached
+
   system_message = "You are a senior software engineer performing a code review. You provide clear, constructive feedback on code changes."
   user_message = (
     f"File: {file_data['filename']}\n"
@@ -34,5 +40,7 @@ def review_code(file_data: dict) -> dict:
         {"role": "user", "content": user_message}
     ]
   )
-  result = response.choices[0].message.content
+  result = result.strip().removeprefix("```json").removesuffix("```").strip()
+
+  set_diff(str(file_data), result)
   return json.loads(result)
