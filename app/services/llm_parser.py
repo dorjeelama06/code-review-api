@@ -40,7 +40,8 @@ def review_code(file_data: dict) -> dict:
         {"role": "user", "content": user_message}
     ]
   )
-  result = result.strip().removeprefix("```json").removesuffix("```").strip()
-
+  raw = response.choices[0].message.content
+  cleaned = raw.strip().removeprefix("```json").removesuffix("```").strip()
+  result = json.loads(cleaned)
   set_diff(str(file_data), result)
-  return json.loads(result)
+  return result

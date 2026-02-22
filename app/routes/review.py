@@ -11,9 +11,15 @@ router = APIRouter()
 class ReviewRequest(BaseModel):
   raw_git_diff: str
 
-@router.post("/review")
 @limiter.limit("10/minute")
+@router.post("/review", summary="Review a Git diff")
 async def review(request: Request, body: ReviewRequest):
+  """
+    Accepts a raw Git diff and returns structured code review feedback.
+    - Parses the diff into individual file changes
+    - Checks Redis cache before calling the LLM
+    - Returns issues with severity, comments, and suggestions
+  """
   parsed_files = parse_diff(body.raw_git_diff)
   result = []
   for file_data in parsed_files:
